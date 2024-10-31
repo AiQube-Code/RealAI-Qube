@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylish Chatbot with Math and Definitions</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1e1f23;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 400px;
+            background-color: #1e1f23;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .chat-header {
+            background-color: #ff4c4c;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            border-bottom: 5px solid #de6ef1;
+        }
+
+        .chat-display {
+            padding: 30px 10px 10px;
+            height: 400px;
+            overflow-y: auto;
+            background: #1e1f23;
+            color: white;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-message, .bot-message {
+            position: relative;
+            max-width: 70%;
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-size: 1.1em;
+        }
+
+        .user-message {
+            background-color: #007dfe;
+            align-self: flex-end;
+            color: white;
+        }
+
+        .user-message::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            right: 20px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #007dfe;
+        }
+
+        .bot-message {
+            background: linear-gradient(135deg, #ff8b8b, #ffab8e, #ffcc80, #a1e6ff, #89e4f1);
+            align-self: flex-start;
+            color: #26262f;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .bot-message::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #ff8b8b; /* Base color of the gradient */
+        }
+
+        .input-container {
+            display: flex;
+            padding: 10px;
+            justify-content: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            margin-right: 5px;
+            font-size: 1em;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            background-color: #de6ef1;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        button:hover {
+            background-color: #c65e8b;
+        }
+
+        .calculator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+            background-color: #26262f;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .calculator input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .calculator button {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .define-container {
+            display: flex;
+            padding: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .define-container input {
+            flex: 1;
+            margin-right: 5px;
+        }
+
+        .define-container button {
+            background-color: #ffcc80;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">AI Chatbot</div>
+        <div class="chat-display" id="chat-display"></div>
+
+        <!-- Calculator placed above the send bar -->
+        <div class="calculator">
+            <input type="text" id="calc-input" placeholder="Enter calculation (e.g. 2 + 2)" />
+            <button id="calc-button">Calculate</button>
+            <div id="calc-result" style="color: #fff;"></div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Ask me something..." />
+            <button id="send-button">Send</button>
+        </div>
+        
+        <div class="define-container">
+            <input type="text" id="define-input" placeholder="Define a term..." />
+            <button id="define-button">Define</button>
+        </div>
+    </div>
+
+    <script>
+        const definitions = JSON.parse(localStorage.getItem('definitions')) || {};
+
+        const defaultResponses = {
+            greetings: [
+                "Hello! How can I assist you today?",
+                "Hi there! What can I do for you?",
+                "Greetings! How may I help you?",
+                "Hey! What do you need assistance with?",
+                "Howdy! Need help with something?"
+            ],
+            smallTalk: [
+                "I'm just a chatbot, but I'm here to help!",
+                "I’m always ready to chat!",
+                "Just doing my thing, how about you?",
+                "I'm here to assist you anytime!",
+                "What’s on your mind?"
+            ],
+            inquiries: [
+                "I can chat about various topics! Try asking me about math or tech.",
+                "What would you like to know? I'm here for all your questions.",
+                "Feel free to ask me anything, I'm here to help!",
+                "What can I provide information on for you?",
+                "Let me know what you're curious about!"
+            ],
+            feedback: [
+                "I'm learning, so your feedback is appreciated!",
+                "Thanks for chatting with me! Your thoughts matter.",
+                "Let me know how I'm doing, feedback helps me improve!",
+                "Your input is valuable; I’m here to assist better!",
+                "I appreciate your interaction!"
+            ],
+            thanks: [
+                "You're welcome! If you have more questions, just ask!",
+                "No problem! Happy to help.",
+                "Anytime! I'm here whenever you need assistance.",
+                "Glad to assist you! Let me know if you need anything else.",
+                "You're welcome! Feel free to return anytime."
+            ],
+            farewell: [
+                "Goodbye! Have a great day!",
+                "Take care! I'm here whenever you need me.",
+                "See you later! Don't hesitate to reach out.",
+                "Goodbye! Wishing you all the best.",
+                "Catch you later! I'm always here for you."
+            ]
+        };
+
+        document.getElementById("send-button").addEventListener("click", sendMessage);
+        document.getElementById("calc-button").addEventListener("click", calculate);
+        document.getElementById("define-button").addEventListener("click", defineTerm);
+        document.getElementById("user-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        document.getElementById("calc-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                calculate();
+            }
+        });
+
+        document.getElementById("define-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                defineTerm();
+            }
+        });
+
+        function sendMessage() {
+            const userInput = document.getElementById("user-input").value.trim();
+            if (!userInput) return;
+
+            addMessage(userInput, "user");
+            const botResponse = generateResponse(userInput);
+            addMessage(botResponse, "bot");
+
+            document.getElementById("user-input").value = '';
+        }
+
+        function generateResponse(userInput) {
+            userInput = userInput.toLowerCase().trim();
+
+            if (definitions[userInput]) {
+                return definitions[userInput];
+            }
+
+            if (userInput.includes("hello") || userInput.includes("hi")) {
+                return getRandomResponse(defaultResponses.greetings);
+            } else if (userInput.includes("how are you") || userInput.includes("doing")) {
+                return getRandomResponse(defaultResponses.smallTalk);
+            } else if (userInput.includes("tell me") || userInput.includes("what is")) {
+                return getRandomResponse(defaultResponses.inquiries);
+            } else if (userInput.includes("thank you") || userInput.includes("thanks")) {
+                return getRandomResponse(defaultResponses.thanks);
+            } else if (userInput.includes("bye") || userInput.includes("goodbye")) {
+                return getRandomResponse(defaultResponses.farewell);
+            } else if (userInput.includes("define")) {
+                return `Please define this: ${userInput}`;
+            } else if (userInput.includes("add")) {
+                const numbers = extractNumbers(userInput);
+                return numbers.length === 2 ? (numbers[0] + numbers[1]).toString() : "Please provide two numbers.";
+            } else if (userInput.includes("subtract")) {
+                const numbers = extractNumbers(userInput);
+                return numbers.length === 2 ? (numbers[0] - numbers[1]).toString() : "Please provide two numbers.";
+            } else if (userInput.includes("multiply")) {
+                const numbers = extractNumbers(userInput);
+                return numbers.length === 2 ? (numbers[0] * numbers[1]).toString() : "Please provide two numbers.";
+            } else if (userInput.includes("divide") || userInput.includes("over")) {
+                const numbers = extractNumbers(userInput);
+                return numbers.length === 2 ? (numbers[1] !== 0 ? (numbers[0] / numbers[1]).toString() : "Cannot divide by zero.") : "Please provide two numbers.";
+            } else {
+                return `Please define this: ${userInput}`;
+            }
+        }
+
+        function calculate() {
+            const calculation = document.getElementById("calc-input").value.trim();
+            if (!calculation) return;
+
+            addMessage(calculation, "user");
+
+            try {
+                const result = eval(calculation);
+                addMessage(result.toString(), "bot");
+            } catch (e) {
+                addMessage("Invalid calculation. Please try again.", "bot");
+            }
+
+            document.getElementById("calc-input").value = '';
+        }
+
+        function extractNumbers(input) {
+            return input.match(/\d+/g) ? input.match(/\d+/g).map(Number) : [];
+        }
+
+        function getRandomResponse(responses) {
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        function addMessage(message, sender) {
+            const messageElement = document.createElement("div");
+            messageElement.className = sender === "user" ? "user-message" : "bot-message";
+            messageElement.textContent = message;
+            document.getElementById("chat-display").appendChild(messageElement);
+            document.getElementById("chat-display").scrollTop = document.getElementById("chat-display").scrollHeight;
+        }
+
+        function defineTerm() {
+            const term = document.getElementById("define-input").value.trim();
+            const definition = prompt(`What does "${term}" mean?`);
+
+            if (term && definition) {
+                definitions[term.toLowerCase()] = definition;
+                localStorage.setItem('definitions', JSON.stringify(definitions));
+                alert(`Definition for "${term}" added!`);
+            } else {
+                alert("Please enter both a term and its definition.");
+            }
+
+            document.getElementById("define-input").value = '';
+        }
+    </script>
+</body>
+</html>
